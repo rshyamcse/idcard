@@ -1,13 +1,574 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Page Title</title>
+    <title>ID Creator | Ultra 3D Experience</title>
+
+    <!-- Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Vanilla Tilt for Card Physics -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
+
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-purple: #bc13fe;
+            --dark-bg: #050505;
+            --glass: rgba(255, 255, 255, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: white;
+            font-family: 'Rajdhani', sans-serif;
+            overflow: hidden;
+            /* Prevent scrollbars */
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* --- 3D Background Canvas --- */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.6;
+        }
+
+        /* --- UI Overlay --- */
+        .ui-layer {
+            position: absolute;
+            z-index: 10;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            /* Let clicks pass through to 3D elements */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 2rem;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: auto;
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: white;
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .nav-links a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            margin-left: 2rem;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.3s;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: var(--neon-blue);
+            text-shadow: 0 0 8px var(--neon-blue);
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -5px;
+            left: 0;
+            background-color: var(--neon-blue);
+            transition: width 0.3s;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .hero-text {
+            text-align: center;
+            margin-bottom: 2rem;
+            pointer-events: auto;
+        }
+
+        .hero-text h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4rem;
+            line-height: 1.1;
+            background: linear-gradient(to right, #fff, var(--neon-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .hero-text p {
+            font-size: 1.2rem;
+            color: #aaa;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* --- THE ULTRA 3D CARD --- */
+        .card-container {
+            perspective: 1500px;
+            /* Essential for 3D effect */
+            width: 400px;
+            height: 250px;
+            z-index: 5;
+            pointer-events: auto;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease-out;
+            /* Smooth follow */
+            cursor: pointer;
+        }
+
+        /* Card Base */
+        .card-base {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            transform: translateZ(0px);
+            overflow: hidden;
+        }
+
+        /* Decorative Background Elements on Card */
+        .card-bg-shape {
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200px;
+            height: 200px;
+            background: var(--neon-purple);
+            filter: blur(60px);
+            opacity: 0.4;
+            border-radius: 50%;
+            transform: translateZ(-20px);
+        }
+
+        .card-bg-line {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: var(--neon-blue);
+            box-shadow: 0 0 15px var(--neon-blue);
+            transform: translateZ(10px);
+        }
+
+        /* Card Content Layers (Floating in Z-space) */
+        .card-header {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transform: translateZ(30px);
+        }
+
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--neon-blue);
+            letter-spacing: 1px;
+        }
+
+        .chip {
+            width: 30px;
+            height: 20px;
+            background: linear-gradient(135deg, #ffd700, #b8860b);
+            border-radius: 4px;
+            border: 1px solid #fff;
+            opacity: 0.8;
+        }
+
+        .card-body {
+            position: absolute;
+            top: 60px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            gap: 15px;
+            transform: translateZ(50px);
+            /* Moves this layer closer to user */
+        }
+
+        .photo-frame {
+            width: 80px;
+            height: 100px;
+            background: #222;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .photo-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(100%) contrast(1.2);
+        }
+
+        .info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .info h2 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .info p {
+            font-size: 0.9rem;
+            color: #ccc;
+            margin-bottom: 2px;
+        }
+
+        .info .id-number {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon-blue);
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+        }
+
+        /* Holographic Overlay */
+        .holo-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(125deg,
+                    rgba(255, 255, 255, 0) 30%,
+                    rgba(255, 255, 255, 0.1) 40%,
+                    rgba(255, 255, 255, 0.2) 50%,
+                    rgba(255, 255, 255, 0.1) 60%,
+                    rgba(255, 255, 255, 0) 70%);
+            transform: translateZ(80px);
+            /* Moves furthest forward */
+            pointer-events: none;
+            mix-blend-mode: overlay;
+        }
+
+        /* Footer of Card */
+        .card-footer {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            transform: translateZ(40px);
+        }
+
+        .barcode {
+            height: 25px;
+            width: 120px;
+            background: repeating-linear-gradient(90deg,
+                    #fff,
+                    #fff 2px,
+                    transparent 2px,
+                    transparent 4px);
+            opacity: 0.7;
+        }
+
+        .signature {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            color: var(--neon-purple);
+            border-bottom: 1px solid var(--neon-purple);
+            padding-bottom: 2px;
+        }
+
+        /* Instructions */
+        .instructions {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            pointer-events: auto;
+        }
+
+        .mouse-icon {
+            width: 20px;
+            height: 30px;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .mouse-icon::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+            animation: scroll 1.5s infinite;
+        }
+
+        @keyframes scroll {
+            0% {
+                top: 5px;
+                opacity: 1;
+            }
+
+            100% {
+                top: 15px;
+                opacity: 0;
+            }
+        }
+    </style>
 </head>
+
 <body>
-    <h1>This is a Heading</h1>
-    <p>This is a paragraph of text. You can add more content here.</p>
-    <a href="#">You can do the coding now</a>
+
+    <!-- 3D Background -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- UI Layer -->
+    <div class="ui-layer">
+        <nav>
+            <div class="logo">ID<span style="color:var(--neon-blue)">.CREATE</span></div>
+            <div class="nav-links">
+                <a href="about.html">About</a>
+                <a href="contact.html">Contact</a>
+            </div>
+        </nav>
+
+        <div class="hero-text">
+            <h1>DESIGN YOUR<br>IDENTITY</h1>
+            <p>Experience the next generation of digital ID creation. Fully customizable, ultra-secure, and visually
+                stunning.</p>
+        </div>
+
+        <div class="instructions">
+            <div class="mouse-icon"></div>
+            <span>Move your mouse to explore</span>
+        </div>
+    </div>
+
+    <!-- 3D Card Container -->
+    <div class="card-container">
+        <div class="card" id="id-card">
+            <div class="card-base">
+                <div class="card-bg-shape"></div>
+                <div class="card-bg-line"></div>
+
+                <div class="card-header">
+                    <div class="logo-text">SECURE ID</div>
+                    <div class="chip"></div>
+                </div>
+
+                <div class="card-body">
+                    <div class="photo-frame">
+                        <!-- Placeholder Image -->
+                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80"
+                            alt="User Photo" />
+                    </div>
+                    <div class="info">
+                        <h2>ALEXANDER SMITH</h2>
+                        <p>Role: Senior Developer</p>
+                        <p>Dept: Engineering</p>
+                        <div class="id-number">ID: 8842-9901-X</div>
+                    </div>
+                </div>
+
+                <div class="card-footer">
+                    <div class="barcode"></div>
+                    <div class="signature">Alex Smith</div>
+                </div>
+
+                <div class="holo-overlay"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // --- 1. THREE.JS BACKGROUND ANIMATION ---
+        const canvas = document.querySelector('#bg-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let particles = [];
+
+        // Configuration
+        const particleCount = 100;
+        const connectionDistance = 150;
+        const mouseDistance = 200;
+
+        // Resize handling
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Mouse tracking for background interaction
+        let mouse = { x: null, y: null };
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.x;
+            mouse.y = e.y;
+        });
+        window.addEventListener('mouseout', () => {
+            mouse.x = null;
+            mouse.y = null;
+        });
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.size = Math.random() * 2 + 1;
+                this.color = Math.random() > 0.5 ? '#00f3ff' : '#bc13fe'; // Cyan or Purple
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Bounce off edges
+                if (this.x < 0 || this.x > width) this.vx *= -1;
+                if (this.y < 0 || this.y > height) this.vy *= -1;
+
+                // Mouse interaction (repel)
+                if (mouse.x != null) {
+                    let dx = mouse.x - this.x;
+                    let dy = mouse.y - this.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < mouseDistance) {
+                        const forceDirectionX = dx / distance;
+                        const forceDirectionY = dy / distance;
+                        const force = (mouseDistance - distance) / mouseDistance;
+                        const directionX = forceDirectionX * force * 2;
+                        const directionY = forceDirectionY * force * 2;
+                        this.x -= directionX;
+                        this.y -= directionY;
+                    }
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+            }
+        }
+
+        // Initialize particles
+        for (let i = 0; i < particleCount; i++) {
+            particles.push(new Particle());
+        }
+
+        // Animation Loop
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw connections
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i; j < particles.length; j++) {
+                    let dx = particles[i].x - particles[j].x;
+                    let dy = particles[i].y - particles[j].y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < connectionDistance) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(100, 100, 255, ${1 - distance / connectionDistance})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Update and draw particles
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+
+        // --- 2. VANILLA TILT CONFIGURATION ---
+        // This library handles the 3D tilt physics for the card
+        VanillaTilt.init(document.querySelector("#id-card"), {
+            max: 25, // Maximum tilt rotation (degrees)
+            speed: 400, // Speed of the enter/exit transition
+            glare: true, // Add a glare effect
+            "max-glare": 0.2, // Opacity of the glare
+            scale: 1.05, // Scale up slightly when tilted
+            gyroscope: true, // Enable mobile tilt support
+            gyroscopeThreshold: 1,
+            reset: true, // Reset to original position on mouse leave
+            easing: "cubic-bezier(.03,.98,.52,.99)",
+        });
+
+    </script>
 </body>
+
 </html>
